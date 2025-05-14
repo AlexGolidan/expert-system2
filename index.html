@@ -133,7 +133,7 @@
                     labels: labels,
                     datasets: [{
                         data: data,
-                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0'],
                     }]
                 },
                 options: {
@@ -157,25 +157,47 @@
             const probabilities = {};
             let totalMatches = 0;
 
+            // Инициализация вероятностей
             for (const disease in diseases) {
                 probabilities[disease] = 0;
+            }
+
+            // Подсчёт совпадений симптомов с болезнями
+            for (const disease in diseases) {
+                const diseaseSymptoms = diseases[disease];
+                let matches = 0;
+                const totalDiseaseSymptoms = diseaseSymptoms.length;
+
                 for (const symptom of symptoms) {
-                    if (diseases[disease].includes(symptom)) {
-                        probabilities[disease]++;
-                        totalMatches++;
+                    if (diseaseSymptoms.includes(symptom)) {
+                        matches++;
                     }
+                }
+
+                // Вероятность для данной болезни = (количество совпадений / общее количество симптомов болезни) * 100
+                if (totalDiseaseSymptoms > 0) {
+                    probabilities[disease] = (matches / totalDiseaseSymptoms) * 100;
+                    totalMatches += matches;
                 }
             }
 
+            // Нормализация вероятностей, если есть совпадения
             if (totalMatches > 0) {
+                let sumProbabilities = 0;
                 for (const disease in probabilities) {
-                    probabilities[disease] = (probabilities[disease] / totalMatches) * 100;
-                    if (probabilities[disease] === 100) {
-                        probabilities[disease] = 99;
-                    }
                     probabilities[disease] = Math.round(probabilities[disease] * 100) / 100;
+                    sumProbabilities += probabilities[disease];
+                }
+
+                // Если сумма не равна 100%, нормализуем
+                if (sumProbabilities > 0 && sumProbabilities !== 100) {
+                    for (const disease in probabilities) {
+                        probabilities[disease] = (probabilities[disease] / sumProbabilities) * 100;
+                        probabilities[disease] = Math.round(probabilities[disease] * 100) / 100;
+                    }
                 }
             } else {
+                // Если нет совпадений, равные вероятности
                 const numDiseases = Object.keys(diseases).length;
                 const baseProbability = Math.round((100 / numDiseases) * 100) / 100;
                 for (const disease in probabilities) {
@@ -205,6 +227,8 @@
             document.getElementById('results').style.display = 'none';
             document.getElementById('diagnosis-form').style.display = 'block';
             document.getElementById('diagnosis-form').reset();
+            const chart = Chart.getChart('probability-chart');
+            if (chart) chart.destroy();
         }
     </script>
 </body>
